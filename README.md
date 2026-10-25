@@ -83,11 +83,11 @@ In many university environments, campus event notifications and registrations ar
 
 | Discover Events | Event Details & Registration |
 |:---:|:---:|
-| ![Discover Events Placeholder](https://via.placeholder.com/600x340?text=Discover+Events+UI) | ![Event Details Placeholder](https://via.placeholder.com/600x340?text=Event+Details+UI) |
+| ![Discover Events](docs/screenshots/discover-events.png) | ![Event Details & Registration](docs/screenshots/event-details.png) |
 
 | Approval Queue (Admin) | Reports & Analytics |
 |:---:|:---:|
-| ![Admin Approvals Placeholder](https://via.placeholder.com/600x340?text=Admin+Approvals+UI) | ![Reports Analytics Placeholder](https://via.placeholder.com/600x340?text=Reports+and+Analytics+UI) |
+| ![Approval Queue (Admin)](docs/screenshots/admin-approvals.png) | ![Reports & Analytics](docs/screenshots/reports-analytics.png) |
 
 ---
 
