@@ -1,0 +1,27 @@
+# Render Blueprint (optional). You can also create the service by hand in the Render dashboard.
+services:
+  - type: web
+    name: unievents-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI          # MongoDB Atlas connection string
+        sync: false
+      - key: JWT_SECRET         # any long random string
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: CLIENT_URL         # your Vercel URL, e.g. https://unievents.vercel.app
+        sync: false
+      - key: UNIVERSITY_DOMAINS
+        value: bbdu.ac.in,gmail.com
+      - key: DEMO_RESET_LINKS   # shows the password-reset link on screen (no mail server)
+        value: "true"
