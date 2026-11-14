@@ -3,13 +3,14 @@ import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { Award, Compass, RefreshCw } from "lucide-react";
 import { api } from "../../api";
+import { useAuth } from "../../lib/auth";
 import { PageTitle, Status, Empty, Skeleton } from "../../components/ui";
 import { coverFor, bgStyle } from "../../lib/media";
 
 const when = (d) => new Date(d).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const daysTo = (d) => Math.ceil((new Date(d) - Date.now()) / 864e5);
 
-function Ticket({ r }) {
+function Ticket({ r, user }) {
   const e = r.event;
   const confirmed = r.status === 'Confirmed';
   const n = daysTo(e.startAt);
@@ -24,6 +25,10 @@ function Ticket({ r }) {
           </h3>
           <span className="muted small">{when(e.startAt)}</span>
           <span className="muted small">{e.venue}</span>
+          <span className="small ticket-holder">
+            {user.name}
+            {user.rollNumber ? ` · Roll no. ${user.rollNumber}` : ''}
+          </span>
           <div className="row-between" style={{ justifyContent: 'flex-start', marginTop: 4 }}>
             <Status value={r.status} />
             {n >= 0 && <span className="status">{n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`}</span>}
@@ -52,6 +57,7 @@ function Ticket({ r }) {
 }
 
 export function MyEvents() {
+  const { user } = useAuth();
   const [items, setItems] = useState(null),
     [error, setError] = useState(''),
     [tab, setTab] = useState('upcoming');
@@ -100,7 +106,7 @@ export function MyEvents() {
       ) : list.length ? (
         <div className="ticket-list">
           {list.map((r) => (
-            <Ticket r={r} key={r._id} />
+            <Ticket r={r} user={user} key={r._id} />
           ))}
         </div>
       ) : (

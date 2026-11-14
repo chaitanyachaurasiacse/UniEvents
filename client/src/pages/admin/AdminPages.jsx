@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, ClipboardList, Users, Plus, Clock, MapPin } from "lucide-react";
+import { CalendarDays, ClipboardList, Users, Plus, Clock, MapPin, Search } from "lucide-react";
 import { api } from "../../api";
 import { roles, date, datetime, timeRange } from "../../lib/format";
 import { coverFor, bgStyle } from "../../lib/media";
@@ -187,6 +187,7 @@ export function Pending() {
   );
 }
 export function UsersPage() {
+  const [userQ, setUserQ] = useState('');
   const [items, setItems] = useState([]),
     [error, setError] = useState(''),
     [showNew, setShowNew] = useState(false),
@@ -283,11 +284,16 @@ export function UsersPage() {
           </div>
         </form>
       )}
+      <div className="search-box" style={{ maxWidth: 420 }}>
+        <Search size={17} />
+        <input placeholder="Search by name, e-mail or roll number" value={userQ} onChange={(e) => setUserQ(e.target.value)} aria-label="Search users" />
+      </div>
       <div className="table-card">
         <table>
           <thead>
             <tr>
               <th>Name</th>
+              <th>Roll no.</th>
               <th>Email</th>
               <th>Role</th>
               <th>Department</th>
@@ -296,11 +302,12 @@ export function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((u) => (
+            {items.filter((u) => !userQ.trim() || [u.name, u.email, u.rollNumber].join(' ').toLowerCase().includes(userQ.trim().toLowerCase())).map((u) => (
               <tr key={u._id}>
                 <td>
                   <b>{u.name}</b>
                 </td>
+                <td className="mono-cell">{u.rollNumber || '—'}</td>
                 <td>{u.email}</td>
                 <td>{roles[u.role]}</td>
                 <td>{u.department}</td>

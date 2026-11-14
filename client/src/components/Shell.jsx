@@ -194,6 +194,7 @@ export function Shell() {
               <div>
                 <b>{user.name}</b>
                 <small>{user.email}</small>
+                {user.rollNumber && <small>Roll no. {user.rollNumber}</small>}
                 <span className="status">{roles[user.role]}</span>
               </div>
             </div>

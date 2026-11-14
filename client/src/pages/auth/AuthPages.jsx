@@ -82,9 +82,11 @@ export function Register() {
           <input name="email" type="email" value={f.email} onChange={ch} required />
         </label>
         <label>
-          Roll number
+          University roll number
           <input
             name="rollNumber"
+            placeholder="e.g. 1230439111"
+            inputMode="numeric"
             value={f.rollNumber}
             onChange={ch}
             required
@@ -93,6 +95,7 @@ export function Register() {
             pattern="[A-Za-z0-9]{6,15}"
             title="6 to 15 letters or digits"
           />
+          <small className="muted">As printed on your university ID card. It identifies you on tickets, attendance and certificates.</small>
         </label>
         <label>
           Department

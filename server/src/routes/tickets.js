@@ -79,7 +79,7 @@ r.get(
   '/certificates/:code',
   asyncHandler(async (req, res) => {
     const reg = await Registration.findOne({ ticketCode: String(req.params.code).toUpperCase(), status: 'Attended' })
-      .populate('student', 'name department')
+      .populate('student', 'name department rollNumber')
       .populate({ path: 'event', select: 'title venue startAt endAt organizer club', populate: [{ path: 'organizer', select: 'name' }, { path: 'club', select: 'name' }] });
     if (!reg || !reg.event) return fail(res, 404, 'No certificate exists with this code.', 'NOT_FOUND');
     const att = await Attendance.findOne({ registration: reg._id }).select('markedAt');
@@ -88,6 +88,7 @@ r.get(
       certificate: {
         code: reg.ticketCode,
         student: reg.student.name,
+        rollNumber: reg.student.rollNumber,
         department: reg.student.department,
         event: reg.event.title,
         venue: reg.event.venue,

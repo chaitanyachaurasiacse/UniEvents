@@ -80,6 +80,13 @@ export function Profile() {
             <p className="muted">{user.email}</p>
           </div>
         </div>
+        {user.role === 'student' && (
+          <label>
+            University roll number
+            <input value={user.rollNumber || ''} disabled readOnly />
+            <small className="muted">Your roll number identifies you on tickets and certificates. Ask the administrator if it needs correcting.</small>
+          </label>
+        )}
         <label>
           Full name
           <input

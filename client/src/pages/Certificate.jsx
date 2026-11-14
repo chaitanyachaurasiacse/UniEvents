@@ -42,6 +42,7 @@ export function Certificate() {
             <h1>{c.event}</h1>
             <p>This is to certify that</p>
             <div className="name">{c.student}</div>
+            {c.rollNumber && <p className="cert-roll">Roll no. {c.rollNumber}</p>}
             <p>
               {c.department ? `of ${c.department}, ` : ''}participated in <b>{c.event}</b>, organised by {c.host} at {c.venue} on {long(c.date)}, and was
               marked present at the venue by QR ticket check-in.
