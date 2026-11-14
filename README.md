@@ -40,8 +40,9 @@ In many university environments, campus event notifications and registrations ar
 - **Event Discovery:** Search events by keyword, category, and date with upcoming event filters and featured highlights.
 - **Event Registration:** Register for approved events with immediate seat confirmation.
 - **Waitlist Management:** Join a waitlist when capacity is reached (if enabled for the event) with automatic promotion if another attendee cancels.
-- **Registration Management:** View registered and past events in a dedicated dashboard (*My Events*) and cancel registrations when needed.
-- **Notifications:** In-app notification center for registration confirmations, waitlist updates, reminders, and administrative announcements.
+- **QR Tickets (*My Events*):** Every confirmed seat gets a unique ticket code and QR code, grouped into Upcoming, Waitlisted and Past tabs.
+- **Certificates:** Students marked present receive a printable certificate of participation with a public verification page and QR code.
+- **Notifications:** In-app notification center plus real e-mail (via Brevo) for seat confirmations, waitlist promotions, day-before reminders, cancellations and password resets.
 - **Account & Profile:** Self-service registration with university domain validation, profile customization, notification preference toggles, and password management.
 
 ### Faculty Organizer
@@ -49,6 +50,8 @@ In many university environments, campus event notifications and registrations ar
 - **Submission Workflow:** Submit events to the administration queue for formal review.
 - **Feedback & Re-submission:** Receive change requests or rejection rationales from administrators, make adjustments, and resubmit.
 - **Participant & Attendance Management:** Access real-time participant rosters, mark attendance (*Present* / *Absent*), and export participant lists to CSV.
+- **Door Check-in:** Scan students' QR tickets with a phone or laptop camera (or type the code). Duplicate scans, wrong events and invalid codes are rejected, and check-in is open only around the event time.
+- **Overview Charts:** Registrations per day for the last 30 days and registrations by category for the organizer's own events.
 - **Event Lifecycle Controls:** Close completed events after their scheduled end time or cancel events with mandatory student notification.
 - **Organizer Analytics:** Access event performance reports, seat fill rates, and registration breakdowns.
 
@@ -59,6 +62,8 @@ In many university environments, campus event notifications and registrations ar
 
 ### Administrator
 - **Approval Queue:** Review pending submissions with actions to approve, request modifications (minimum 10-character guidance), or reject with stated reasons (minimum 20-character rationale).
+- **Venue Clash Detection:** Submitting or approving an event that overlaps another booked event in the same venue is blocked with a message naming the conflict.
+- **Campus Overview:** University-wide charts of registrations per day and by category alongside headline statistics.
 - **University Event Directory:** View and inspect all events across all statuses and organizer scopes.
 - **User & Staff Management:** Create faculty, club, and administrator accounts; activate or deactivate user accounts with safeguards preventing the deactivation of the last active administrator.
 - **Clubs & Categories Configuration:** Maintain campus club directories and manage categorized event taxonomies with custom color tags.
@@ -73,21 +78,31 @@ In many university environments, campus event notifications and registrations ar
 
 - **Atomic Seat Allocation:** Utilizes conditional MongoDB operations (`findOneAndUpdate` with `$expr` comparison) to guarantee capacity limits are never exceeded during concurrent registration requests.
 - **Automated Lifecycle & Reminders:** Background cron job (every 5 minutes) monitors event schedules to dispatch reminders (24 hours and 1 hour prior) and update event statuses (`Approved` &rarr; `Ongoing` &rarr; `Completed`).
-- **Security & Access Control:** Route-level role guards, secure password hashing using bcrypt, signed JWT authentication, failed login tracking (account lock-out after 5 consecutive failures), and API rate limiting on authentication routes.
+- **Security & Access Control:** Route-level role guards, secure password hashing using bcrypt, signed JWT authentication, failed login tracking (account lock-out after 5 consecutive failures), request validation with `express-validator`, and rate limiting (20 sign-in attempts and 8 password-reset or sign-up requests per 15 minutes per IP).
+- **Transactional E-mail:** Sent through the Brevo HTTP API, so it works on hosts that block SMTP ports. A failed e-mail never fails the request that triggered it.
+- **Automated Tests:** 24 API tests (Vitest + Supertest) run against an in-memory MongoDB, covering sign-in, roles, validation, the approval workflow, seat races, waitlist promotion, check-in and certificates.
 
 ---
 
 ## Screenshots
 
-<!-- Add interface screenshots below once captured -->
-
-| Discover Events | Event Details & Registration |
+| Public landing page | Student: discover events |
 |:---:|:---:|
-| ![Discover Events](docs/screenshots/discover-events.png) | ![Event Details & Registration](docs/screenshots/event-details.png) |
+| ![Landing page](docs/screenshots/landing.jpg) | ![Discover events](docs/screenshots/discover.jpg) |
 
-| Approval Queue (Admin) | Reports & Analytics |
+| Event details and registration | Student: QR tickets |
 |:---:|:---:|
-| ![Approval Queue (Admin)](docs/screenshots/admin-approvals.png) | ![Reports & Analytics](docs/screenshots/reports-analytics.png) |
+| ![Event details](docs/screenshots/event-details.jpg) | ![QR tickets](docs/screenshots/my-tickets.jpg) |
+
+| Organizer: door check-in | Verifiable certificate |
+|:---:|:---:|
+| ![Door check-in](docs/screenshots/door-checkin.jpg) | ![Certificate](docs/screenshots/certificate.jpg) |
+
+| Administrator: campus overview |
+|:---:|
+| ![Admin overview](docs/screenshots/admin-overview.jpg) |
+
+Event photos are from [Unsplash](https://unsplash.com) and used under the Unsplash licence.
 
 ---
 
@@ -95,11 +110,12 @@ In many university environments, campus event notifications and registrations ar
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 18, Vite, React Router 7, Axios, Lucide React, Recharts |
+| **Frontend** | React 18, Vite, React Router 7, Axios, Lucide React, Recharts, `qrcode.react`, `html5-qrcode` |
 | **Backend** | Node.js (>=20), Express 4 |
 | **Database** | MongoDB, Mongoose 8 |
+| **E-mail** | Brevo transactional e-mail API |
 | **Security & Utilities** | JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `helmet`, `express-rate-limit`, `express-validator`, `node-cron`, `cors` |
-| **Development Tooling** | `concurrently`, `nodemon` |
+| **Testing & Tooling** | Vitest, Supertest, `mongodb-memory-server`, `concurrently`, `nodemon` |
 
 ---
 
@@ -145,10 +161,20 @@ UniEvents follows a decoupled client-server architecture:
 UniEvents/
 ├── client/
 │   ├── public/
+│   ├── public/img/            # Event cover photos (Unsplash)
 │   ├── src/
 │   │   ├── api.js             # Axios client instance with auth interceptors
-│   │   ├── main.jsx           # App views, routing, contexts, and UI components
-│   │   └── style.css          # Application styles and design system
+│   │   ├── main.jsx           # Entry point
+│   │   ├── App.jsx            # Public vs signed-in routing
+│   │   ├── components/        # Shell (sidebar, routes), shared UI, charts
+│   │   ├── lib/               # Auth context, formatting, cover photos
+│   │   ├── pages/
+│   │   │   ├── auth/          # Sign in, register, forgot/reset password
+│   │   │   ├── student/       # Discover, My Events (QR tickets)
+│   │   │   ├── organizer/     # Dashboard, event form, manage, door check-in
+│   │   │   ├── admin/         # Overview, approvals, users, clubs, categories, audit
+│   │   │   └── Landing.jsx, EventDetail.jsx, Reports.jsx, Profile.jsx, Certificate.jsx
+│   │   └── style.css          # Design tokens and component styles
 │   ├── index.html             # Client entry HTML
 │   ├── package.json           # Client dependencies and build scripts
 │   ├── vercel.json            # SPA routing rewrite rule for Vercel
@@ -160,12 +186,16 @@ UniEvents/
 │   │   │   └── auth.js        # JWT verification, role authorization, and ownership guards
 │   │   ├── models/
 │   │   │   └── index.js       # Mongoose schemas (User, Event, Registration, Club, etc.)
-│   │   ├── routes/
-│   │   │   └── api.js         # Core REST API endpoint definitions
+│   │   ├── routes/            # auth, events, registrations, tickets, notifications, profile, reports, admin
 │   │   ├── utils/
-│   │   │   └── core.js        # Hashing, token generation, helpers, and audit utilities
-│   │   ├── index.js           # Express app setup, DB connection, and cron scheduler
-│   │   └── seed.js            # Database seeding script for initial demo data
+│   │   │   ├── core.js        # Hashing, tokens, notifications, audit helpers
+│   │   │   ├── http.js        # Shared request helpers
+│   │   │   ├── mailer.js      # Brevo e-mail sender and templates
+│   │   │   └── validators.js  # express-validator rules
+│   │   ├── app.js             # Express app (middleware, routes, error handling)
+│   │   ├── index.js           # DB connection, server start, scheduled jobs
+│   │   └── seed.js            # Demo data for a realistic semester
+│   ├── tests/api.test.js      # API tests (Vitest + Supertest)
 │   ├── package.json           # Server dependencies and start scripts
 │   └── .env.example           # Server environment template
 ├── package.json               # Root scripts (install:all, dev, seed, build)
@@ -227,13 +257,21 @@ Open `server/.env` and configure your `MONGO_URI` and a random `JWT_SECRET`. Ens
 
 ### 4. Seed the Database
 
-Populate demo accounts, standard event categories, a student club, and sample events:
+Build a realistic semester of demo data: 20 events across every status (completed with attendance, one happening today, upcoming, pending, changes requested, draft, rejected, cancelled), about 1,600 registrations and a waitlist:
 
 ```bash
-npm run seed
+npm run seed -- --reset
 ```
 
-> **Note:** The seed script is idempotent. It will update or insert demo users and categories without duplicating existing events if events already exist in the database.
+> **Warning:** `--reset` deletes all users, events and registrations in the database named in `MONGO_URI` before rebuilding. Without the flag the script only prints which database it would change. Never run it against your production database unless you mean to.
+
+### Run the tests
+
+```bash
+cd server && npm test
+```
+
+The tests start their own in-memory MongoDB, so they never touch your real database and never send e-mail.
 
 ### 5. Start Development Servers
 
@@ -261,7 +299,11 @@ npm run dev
 | `JWT_EXPIRES_IN` | Optional | Expiration timeframe for JWT tokens (defaults to 1d) | `1d` |
 | `CLIENT_URL` | Optional | Allowed CORS origin(s), comma-separated. Supports wildcards | `http://localhost:5173` |
 | `UNIVERSITY_DOMAINS` | Optional | Allowed email domains for student account registration | `bbdu.ac.in,gmail.com` |
-| `DEMO_RESET_LINKS` | Optional | Displays password reset link on-screen when no SMTP service is configured | `true` |
+| `BREVO_API_KEY` | For e-mail | Brevo API key with transactional e-mail permission. Without it, e-mails are only logged | `xkeysib-…` |
+| `MAIL_FROM_EMAIL` | For e-mail | Sender address, verified in Brevo | `you@gmail.com` |
+| `MAIL_FROM_NAME` | Optional | Sender name shown in inboxes | `UniEvents` |
+| `MAIL_REDIRECT_TO` | Dev only | Sends every e-mail to this inbox instead of the real recipient. Leave unset in production | `you@gmail.com` |
+| `DEMO_RESET_LINKS` | Optional | Shows the password reset link on screen when e-mail is not configured | `true` |
 | `NODE_ENV` | Optional | Environment mode (`development` or `production`) | `development` |
 
 ### Client Configuration (`client/.env`)
@@ -278,12 +320,15 @@ The database seed script (`server/src/seed.js`) provisions predefined accounts f
 
 **Common Password for All Demo Accounts:** `UniEvents@123`
 
-| Role | Email | Capabilities & Initial State |
+| Role | Email | Name and initial state |
 |---|---|---|
-| **Student** | `student@bbdu.ac.in` | Registered for sample events; has one attended event record. |
-| **Faculty** | `faculty@bbdu.ac.in` | Event organizer; owns approved, pending, and completed events. |
-| **Club Organizer** | `club@bbdu.ac.in` | Coordinator for Technology Club; owns submitted club events. |
-| **Administrator** | `admin@bbdu.ac.in` | System admin with full permissions. Holds secondary `faculty` and `student` roles accessible via the workspace switcher. |
+| **Student** | `student@bbdu.ac.in` | Chaitanya Chaurasia. Tickets for upcoming events (one today), a waitlist place and three certificates. |
+| **Student** | `divyanshu@bbdu.ac.in`, `arijit@bbdu.ac.in` | Divyanshu and Arijit Tiwari, with their own registrations and attendance. |
+| **Faculty** | `faculty@bbdu.ac.in` | Dr. Ramesh Vaishya. Owns completed, ongoing (check-in open), upcoming, pending, draft and cancelled events. |
+| **Club Organizer** | `club@bbdu.ac.in` | Coordinator for the Technology Club, Cultural Society, Sports Committee, E-Cell and Literary Society events. |
+| **Administrator** | `admin@bbdu.ac.in` | Office of Student Affairs. Three events waiting for review; can switch to the faculty workspace. |
+
+The sign-in page also has one-click demo buttons for each role. The other 420 registered students are labelled by roll number.
 
 ---
 
@@ -294,6 +339,12 @@ Protected routes require an `Authorization: Bearer <token>` header. Multi-role u
 | Group | Route | Method | Access | Description |
 |---|---|---|---|---|
 | **Health** | `/api/health` | `GET` | Public | Service health status check |
+| **Public** | `/api/public/events` | `GET` | Public | Upcoming approved events and totals for the landing page |
+| | `/api/certificates/:code` | `GET` | Public | Verify a certificate of participation |
+| **Tickets** | `/api/tickets/me` | `GET` | Student | Student's tickets with QR codes |
+| | `/api/events/:id/checkin` | `POST` | Owner, Admin | Check a ticket in at the door |
+| | `/api/events/:id/checkins` | `GET` | Owner, Admin | Live check-in list and count |
+| | `/api/stats/overview` | `GET` | Faculty, Club, Admin | 30-day registration trend and category split |
 | **Auth** | `/api/auth/register` | `POST` | Public | Student self-registration (domain validated) |
 | | `/api/auth/login` | `POST` | Public | Authenticate user and receive JWT |
 | | `/api/auth/me` | `GET` | Authenticated | Fetch current user profile and roles |
@@ -355,8 +406,8 @@ The application is deployed across cloud platforms:
 Potential enhancements identified for future releases:
 
 - **Institutional SSO:** Integration with university SAML/OAuth2 single sign-on providers.
-- **Transactional Email Service:** Integration with an external SMTP service (e.g., SendGrid, Amazon SES) for automated verification emails and password reset links.
-- **QR Code Attendance Verification:** Digital ticket generation with mobile QR scanning at venue check-in.
-- **Expanded Export Formats:** Native PDF summary generation and formatted Excel spreadsheet exports for institutional record-keeping.
-- **Token Refresh Rotation:** Implementing dual-token authentication with refresh token rotation and explicit multi-device session management.
-- **Automated Testing Suite:** Unit and integration test coverage for core API routes and user workflows.
+- **E-mail Verification:** Confirm a student's address at sign-up before the account is activated.
+- **Cover Photo Uploads:** Let organizers upload their own event photos to cloud storage.
+- **Expanded Export Formats:** Formatted Excel exports for institutional record-keeping.
+- **Token Refresh Rotation:** Dual-token authentication with refresh token rotation and multi-device session management.
+- **Front-end Tests:** Component and end-to-end browser tests alongside the existing API tests.
