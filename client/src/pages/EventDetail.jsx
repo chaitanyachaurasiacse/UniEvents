@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Users, MapPin } from "lucide-react";
+import { CalendarDays, Users, MapPin, Ticket, CalendarPlus } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../lib/auth";
-import { date, datetime } from "../lib/format";
+import { date, datetime, timeRange, calendarUrl } from "../lib/format";
 import { Status, useParamsSafe, SeatNote, seats } from "../components/ui";
 import { coverFor, bgStyle } from "../lib/media";
 
@@ -77,7 +77,7 @@ export function EventDetail() {
                 <CalendarDays />
                 <span>
                   <b>Date and time</b>
-                  {datetime(event.startAt)} – {datetime(event.endAt)}
+                  {timeRange(event.startAt, event.endAt)}
                 </span>
               </div>
               <div>
@@ -118,6 +118,11 @@ export function EventDetail() {
           ) : registration ? (
             <>
               <Status value={registration.status} />
+              {registration.status === 'Confirmed' && (
+                <Link className="btn primary full" to="/my-events">
+                  <Ticket size={16} /> Show my QR ticket
+                </Link>
+              )}
               <button className="btn danger full" onClick={act} disabled={busy}>
                 {registration.status === 'Waitlisted' ? 'Leave waitlist' : 'Cancel registration'}
               </button>
@@ -133,6 +138,9 @@ export function EventDetail() {
               {busy ? 'Please wait' : canWait ? 'Join waitlist' : full ? 'Registration full' : 'Register now'}
             </button>
           )}
+          <a className="btn secondary full small" href={calendarUrl(event)} target="_blank" rel="noopener noreferrer">
+            <CalendarPlus size={15} /> Add to Google Calendar
+          </a>
           <small className="muted">Registration is subject to eligibility and availability.</small>
           {error && <div className="alert error">{error}</div>}
         </aside>

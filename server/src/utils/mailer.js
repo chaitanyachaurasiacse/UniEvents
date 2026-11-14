@@ -114,7 +114,12 @@ export const templates = {
 export async function sendMail(to, { subject, html }) {
   if (!to?.email) return false;
   // Local testing: send every mail to one inbox so demo addresses never receive real e-mail.
-  const redirect = process.env.MAIL_REDIRECT_TO;
+  // Seeded demo accounts use made-up university addresses: send their mail to MAIL_DEMO_INBOX, or skip it.
+  let redirect = process.env.MAIL_REDIRECT_TO;
+  if (!redirect && to.isDemo) {
+    redirect = process.env.MAIL_DEMO_INBOX;
+    if (!redirect) return false;
+  }
   if (redirect) {
     subject = `[to ${to.email}] ${subject}`;
     to = { email: redirect, name: to.name };

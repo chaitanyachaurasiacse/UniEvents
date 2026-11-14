@@ -27,7 +27,7 @@ await Promise.all([User, Category, Club, Event, Registration, Attendance, Notifi
 
 // People: the project team as students, the supervisor as faculty, Student Affairs as admin.
 const mk = (name, email, role, extra = {}) => ({
-  name, email, role, passwordHash: pass, department: 'Computer Science & Engineering', year: '4th Year', isActive: true, isVerified: true, ...extra,
+  name, email, role, passwordHash: pass, department: 'Computer Science & Engineering', year: '4th Year', isActive: true, isVerified: true, isDemo: true, ...extra,
 });
 const [admin, faculty, clubLead, chaitanya, divyanshu, arijit] = await User.insertMany([
   mk('Office of Student Affairs', 'admin@bbdu.ac.in', 'admin', { extraRoles: ['faculty'], designation: 'Administrator' }),
@@ -104,6 +104,13 @@ const summaries = {
   'Hackathon 2026: Build for Campus': '24 hours, teams of four, one brief: fix something that annoys students on campus.',
   'Startup Pitch Day': 'Ten student startups pitch to founders and investors from Lucknow.',
   'Rang Utsav: Annual Cultural Night': 'Classical and folk dance, the battle of bands and the department fashion walk.',
+  'Blockchain 101 Seminar': 'How blockchains work, smart contracts in plain language and a live demo on a test network.',
+  'Inter-Hostel Football League': 'Seven-a-side football between hostel teams over two weekends.',
+  'Alumni Talk: Careers in Data': 'BBDU alumni working in analytics and data engineering talk about their first two years in industry.',
+  'Kathak Workshop with a Guest Artist': 'A three-hour introduction to Kathak footwork and expressions with a visiting performer.',
+  'Intro to Open Source: Your First Pull Request': 'Find a beginner-friendly issue, fork a repository and open your first pull request with mentors.',
+  'Night Trek to Kukrail Forest': 'A guided night walk through the Kukrail reserve with the Sports Committee.',
+  'Guest Lecture: Quantum Computing Basics': 'Qubits, superposition and what quantum computers can and cannot do yet.',
 };
 
 // Deterministic shuffle (mulberry32) so every reseed produces the same demo data.
@@ -135,7 +142,7 @@ for (const [i, [title, cat, by, club, venue, startAt, hours, capacity, fill, sta
   const ev = await Event.create({
     title, category: cats[cat], organizer: by._id, club: club ? clubs[club] : undefined, venue, startAt, endAt,
     summary: summaries[title] || 'Details to be confirmed by the organizer.',
-    description: `${summaries[title] || title}\n\nOpen to all students of Babu Banarasi Das University. Registration is free; bring your college ID card. Seats are limited and confirmed on a first-come basis, with a waitlist when the event is full.`,
+    description: `Who can attend: all students of Babu Banarasi Das University. Entry is free; bring your college ID card.\n\nSeats are confirmed first come, first served. When the event is full you can join the waitlist, and you will be e-mailed the moment a seat opens. Show the QR ticket from My Tickets at the entrance.`,
     registrationOpensAt: new Date(submittedAt.getTime() + DAY),
     registrationDeadline: new Date(startAt.getTime() - (status === 'Ongoing' ? -2 * HOUR : 12 * HOUR)),
     capacity, status, featured: !!x.featured, waitlistEnabled: true, imageUrl: `/img/${x.img}.jpg`,

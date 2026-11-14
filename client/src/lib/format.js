@@ -4,6 +4,7 @@ export const roles = { student: 'Student', faculty: 'Faculty', club: 'Club Organ
 export const initials = (n) =>
   (n || 'U')
     .split(' ')
+    .filter((x) => /^[A-Z]/.test(x) && !/^(Dr|Prof|Mr|Ms|Mrs).?$/.test(x))
     .map((x) => x[0])
     .slice(0, 2)
     .join('')
@@ -25,3 +26,17 @@ export function toLocal(d) {
   return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 export const PW_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,20}$/;
+
+/** "Sat 14 Nov, 3:00 – 9:00 pm" for one day, otherwise both dates. */
+export const timeRange = (a, b) => {
+  const s = new Date(a), e = new Date(b);
+  const day = (d) => d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const t = (d) => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  return s.toDateString() === e.toDateString() ? `${day(s)}, ${t(s)} – ${t(e)}` : `${day(s)}, ${t(s)} – ${day(e)}, ${t(e)}`;
+};
+/** Google Calendar "add event" link. */
+export const calendarUrl = (e) => {
+  const z = (d) => new Date(d).toISOString().replace(/[-:]/g, '').replace(/.d{3}/, '');
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: e.title, dates: `${z(e.startAt)}/${z(e.endAt)}`, location: e.venue || '', details: e.summary || '' });
+  return `https://calendar.google.com/calendar/render?${q}`;
+};

@@ -4,6 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { App } from "./App";
 import "./style.css";
+import { initTheme } from "./lib/theme";
+
+initTheme();
 
 function Root() {
   return (

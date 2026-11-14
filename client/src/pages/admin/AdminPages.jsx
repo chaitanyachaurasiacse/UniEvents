@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, ClipboardList, Users, Plus, Clock, MapPin } from "lucide-react";
 import { api } from "../../api";
-import { roles, date, datetime } from "../../lib/format";
+import { roles, date, datetime, timeRange } from "../../lib/format";
+import { coverFor, bgStyle } from "../../lib/media";
 import { OverviewCharts } from "../../components/Charts";
 import { PageTitle, Stat, Status, EventTable, Empty, AskModal } from "../../components/ui";
 
@@ -134,7 +135,9 @@ export function Pending() {
       {error && <div className="alert error">{error}</div>}
       <div className="review-list">
         {items.map((e) => (
-          <div className="review-card" key={e._id}>
+          <div className="review-card with-photo" key={e._id}>
+            <div className="review-photo" style={bgStyle(coverFor(e))} />
+            <div className="review-body">
             <div className="row-between">
               <Status value={e.status} />
               <small className="muted">Submitted {date(e.submittedAt)}</small>
@@ -143,18 +146,22 @@ export function Pending() {
               <Link to={`/event/${e._id}`}>{e.title}</Link>
             </h3>
             <p>{e.summary}</p>
-            <div className="event-meta">
+            <div className="review-meta">
               <span>
                 <Users size={14} />
                 {e.organizer?.name}
               </span>
               <span>
                 <CalendarDays size={14} />
-                {date(e.startAt)}
+                {timeRange(e.startAt, e.endAt)}
               </span>
               <span>
                 <MapPin size={14} />
                 {e.venue}
+              </span>
+              <span>
+                <Users size={14} />
+                {e.capacity} seats
               </span>
             </div>
             <div className="review-actions">
@@ -170,6 +177,7 @@ export function Pending() {
               <button className="btn primary" onClick={() => approve(e._id)}>
                 Approve event
               </button>
+            </div>
             </div>
           </div>
         ))}

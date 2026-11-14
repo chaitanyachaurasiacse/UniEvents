@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../../api";
 import { date, toLocal } from "../../lib/format";
 import { PageTitle } from "../../components/ui";
+import { STOCK_COVERS, bgStyle } from "../../lib/media";
 
 export function EventForm() {
   const nav = useNavigate(),
@@ -19,6 +20,8 @@ export function EventForm() {
       endAt: '',
       registrationDeadline: '',
       capacity: 100,
+      waitlistEnabled: true,
+      imageUrl: '',
     }),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
@@ -162,6 +165,18 @@ export function EventForm() {
             />{' '}
             Enable a waitlist when the event is full
           </label>
+          <div className="span2 field-group">
+            <span className="field-label">Cover photo</span>
+            <div className="cover-picker" role="radiogroup" aria-label="Cover photo">
+              <button type="button" role="radio" aria-checked={!form.imageUrl} className={`cover-auto ${!form.imageUrl ? 'on' : ''}`} onClick={() => setForm((f) => ({ ...f, imageUrl: '' }))}>
+                Automatic
+              </button>
+              {STOCK_COVERS.map((u) => (
+                <button type="button" role="radio" aria-checked={form.imageUrl === u} aria-label={`Cover ${u.split('/').pop()}`} key={u} className={form.imageUrl === u ? 'on' : ''} style={bgStyle(u)} onClick={() => setForm((f) => ({ ...f, imageUrl: u }))} />
+              ))}
+            </div>
+            <small className="muted">Automatic picks a photo that matches the category.</small>
+          </div>
         </div>
         {form.status === 'Changes Requested' && form.reviewComment && (
           <div className="alert error">Changes requested by the administrator: {form.reviewComment}</div>

@@ -71,8 +71,8 @@ export function MyEvents() {
   return (
     <>
       <PageTitle
-        eyebrow="My tickets"
-        title="Your events"
+        eyebrow="Your registrations"
+        title="My tickets"
         sub={items ? `${groups.upcoming.length} upcoming · ${groups.waitlist.length} waitlisted · ${certs} certificates` : 'Loading your tickets…'}
         action={
           <Link className="btn secondary" to="/">

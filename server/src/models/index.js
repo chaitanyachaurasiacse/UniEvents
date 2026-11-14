@@ -17,6 +17,8 @@ const userSchema = new Schema(
     bio: { type: String, maxlength: 200 },
     isActive: { type: Boolean, default: true },
     isVerified: { type: Boolean, default: true },
+    // Accounts created by the seed script. Their e-mail never goes to the real address.
+    isDemo: { type: Boolean, default: false },
     failedLoginAttempts: { type: Number, default: 0 },
     lockedUntil: Date,
     lastLoginAt: Date,

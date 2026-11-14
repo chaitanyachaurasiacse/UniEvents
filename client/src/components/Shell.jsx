@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link, Routes, Route } from "react-router-dom";
-import { CalendarDays, Compass, LayoutDashboard, Users, CheckCheck, Bell, LogOut, Plus, Menu, ChartNoAxesCombined, Tags, Building2, UserCircle, ShieldCheck } from "lucide-react";
+import { CalendarDays, Compass, LayoutDashboard, Users, CheckCheck, Bell, LogOut, Plus, Menu, ChartNoAxesCombined, Tags, Building2, UserCircle, ShieldCheck, Sun, Moon, X } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../lib/auth";
+import { useTheme } from "../lib/theme";
 import { roles, initials, datetime } from "../lib/format";
 import { Discover } from "../pages/student/Discover";
 import { EventDetail } from "../pages/EventDetail";
@@ -19,7 +20,7 @@ import { CheckIn } from "../pages/organizer/CheckIn";
 export const navByRole = {
   student: [
     ['Discover', Compass, '/'],
-    ['My Events', CalendarDays, '/my-events'],
+    ['My Tickets', CalendarDays, '/my-events'],
     ['Profile', UserCircle, '/profile'],
   ],
   faculty: [
@@ -46,69 +47,110 @@ export const navByRole = {
     ['Audit Log', ShieldCheck, '/audit'],
   ],
 };
+
 export function Shell() {
   const { user, logout, switchRole } = useAuth(),
-    [collapsed, setCollapsed] = useState(false),
-    [notif, setNotif] = useState(false),
+    [sideOpen, setSideOpen] = useState(false),
+    [pop, setPop] = useState(null), // 'notifications' | 'account' | null
     [unread, setUnread] = useState(0),
-    [pend, setPend] = useState(0);
+    [pend, setPend] = useState(0),
+    [theme, toggleTheme] = useTheme();
   const loc = useLocation(),
     nav = useNavigate();
+  const refreshUnread = () => api.get('/notifications').then((x) => setUnread(x.unread || 0)).catch(() => {});
+
   useEffect(() => {
-    api
-      .get('/notifications')
-      .then((x) => setUnread(x.unread || 0))
-      .catch(() => {});
-    if (user.role === 'admin')
-      api
-        .get('/events/pending')
-        .then((x) => setPend(x.items.length))
-        .catch(() => {});
+    refreshUnread();
+    if (user.role === 'admin') api.get('/events/pending').then((x) => setPend(x.items.length)).catch(() => {});
+    setPop(null);
+    setSideOpen(false);
   }, [loc.pathname, user.role]);
+
+  // Close menus on outside click or Escape.
+  useEffect(() => {
+    if (!pop && !sideOpen) return;
+    const onDown = (e) => {
+      if (pop && !e.target.closest('.popover, .pop-trigger')) setPop(null);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setPop(null);
+        setSideOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [pop, sideOpen]);
+
   const links = [...(navByRole[user.role] || navByRole.student)];
   if (!links.some((l) => l[2] === '/profile')) links.push(['Profile', UserCircle, '/profile']);
+  const signOut = () => {
+    logout();
+    nav('/');
+  };
+  const ThemeIcon = theme === 'dark' ? Sun : Moon;
+  const themeLabel = theme === 'dark' ? 'Light theme' : 'Dark theme';
+  const toggle = (name) => setPop(pop === name ? null : name);
+
   return (
-    <div className="app-shell">
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-        <div className="brand">
-          <span className="brand-mark">U</span>
-          {!collapsed && 'UniEvents'}
+    <div className={`app-shell ${sideOpen ? 'side-open' : ''}`}>
+      <aside className="sidebar" aria-label="Main navigation">
+        <div className="side-top">
+          <Link to="/" className="brand" aria-label="UniEvents home">
+            <span className="brand-mark" />
+            UniEvents
+          </Link>
+          <button className="icon-btn side-close" aria-label="Close menu" onClick={() => setSideOpen(false)}>
+            <X size={18} />
+          </button>
         </div>
-        <div className="side-label">WORKSPACE</div>
+        <div className="side-label">{roles[user.role]} workspace</div>
         <nav>
-          {links.map(([label, Icon, path]) => (
-            <Link key={path} to={path} className={`nav-link ${loc.pathname === path ? 'active' : ''}`}>
-              <Icon size={18} />
-              {!collapsed && <span>{label}</span>}
-              {label === 'Pending Approvals' && pend > 0 && <span className="nav-count">{pend}</span>}
-            </Link>
-          ))}
+          {links.map(([label, Icon, path]) => {
+            const active = loc.pathname === path;
+            return (
+              <Link key={path} to={path} className={`nav-link ${active ? 'active' : ''}`} aria-current={active ? 'page' : undefined}>
+                <Icon size={18} />
+                <span>{label}</span>
+                {label === 'Pending Approvals' && pend > 0 && <span className="nav-count">{pend}</span>}
+              </Link>
+            );
+          })}
         </nav>
         <div className="side-bottom">
-          <div className="user-mini">
+          <Link to="/profile" className="user-mini" title="Your profile">
             <div className="avatar">{initials(user.name)}</div>
-            {!collapsed && (
-              <div>
-                <b>{user.name}</b>
-                <small>{roles[user.role]}</small>
-              </div>
-            )}
-          </div>
-          <button className="icon-btn" title="Sign out" onClick={logout}>
+            <div className="who">
+              <b>{user.name}</b>
+              <small>{roles[user.role]}</small>
+            </div>
+          </Link>
+          <button className="icon-btn signout" title="Sign out" aria-label="Sign out" onClick={signOut}>
             <LogOut size={17} />
           </button>
         </div>
       </aside>
+      {sideOpen && <div className="side-scrim" onClick={() => setSideOpen(false)} />}
+
       <main className="main-area">
         <header className="topbar">
-          <button className="icon-btn" onClick={() => setCollapsed(!collapsed)}>
+          <button className="icon-btn menu-btn" aria-label="Open menu" onClick={() => setSideOpen(true)}>
             <Menu size={19} />
           </button>
+          <Link to="/" className="brand top-brand" aria-label="UniEvents home">
+            <span className="brand-mark" />
+            UniEvents
+          </Link>
           <div className="top-spacer" />
           {user.roles?.length > 1 && (
             <select
               className="role-switch"
               title="Switch workspace"
+              aria-label="Switch workspace"
               value={user.role}
               onChange={async (e) => {
                 try {
@@ -127,17 +169,47 @@ export function Shell() {
             </select>
           )}
           <span className="term-label">Academic Session 2026–2027</span>
-          <button className="icon-btn notification-btn" onClick={() => setNotif(!notif)}>
-            <Bell size={19} />
-            {unread > 0 && <i />}
+          <button className="icon-btn" onClick={toggleTheme} aria-label={`Switch to ${themeLabel.toLowerCase()}`} title={themeLabel}>
+            <ThemeIcon size={18} />
           </button>
-          <div className="top-avatar">{initials(user.name)}</div>
+          <button
+            className="icon-btn notification-btn pop-trigger"
+            aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+            aria-expanded={pop === 'notifications'}
+            onClick={() => toggle('notifications')}
+          >
+            <Bell size={19} />
+            {unread > 0 && <span className="badge-count">{unread > 9 ? '9+' : unread}</span>}
+          </button>
+          <button className="top-avatar pop-trigger" aria-label="Account menu" aria-expanded={pop === 'account'} onClick={() => toggle('account')}>
+            {initials(user.name)}
+          </button>
         </header>
-        {notif && (
-          <NotificationPanel
-            close={() => setNotif(false)}
-            refresh={() => api.get('/notifications').then((x) => setUnread(x.unread || 0))}
-          />
+
+        {pop === 'notifications' && <NotificationPanel close={() => setPop(null)} refresh={refreshUnread} />}
+        {pop === 'account' && (
+          <div className="popover account-menu" role="menu">
+            <div className="account-head">
+              <div className="avatar">{initials(user.name)}</div>
+              <div>
+                <b>{user.name}</b>
+                <small>{user.email}</small>
+                <span className="status">{roles[user.role]}</span>
+              </div>
+            </div>
+            <Link role="menuitem" to="/profile">
+              <UserCircle size={17} /> Profile and settings
+            </Link>
+            <Link role="menuitem" to={user.role === 'admin' ? '/all-events' : '/my-events'}>
+              <CalendarDays size={17} /> {user.role === 'student' ? 'My tickets' : user.role === 'admin' ? 'All events' : 'My events'}
+            </Link>
+            <button role="menuitem" onClick={toggleTheme}>
+              <ThemeIcon size={17} /> {themeLabel}
+            </button>
+            <button role="menuitem" className="danger-item" onClick={signOut}>
+              <LogOut size={17} /> Sign out
+            </button>
+          </div>
         )}
         <div className="page-content">
           <RoutesView />
@@ -146,48 +218,64 @@ export function Shell() {
     </div>
   );
 }
+
 export function NotificationPanel({ close, refresh }) {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(null);
+  const nav = useNavigate();
   useEffect(() => {
-    api.get('/notifications').then((x) => setItems(x.items));
+    api.get('/notifications').then((x) => setItems(x.items)).catch(() => setItems([]));
   }, []);
-  const read = async (id) => {
-    await api.put(`/notifications/${id}/read`);
-    setItems((a) => a.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
-    refresh();
+  const open = async (n) => {
+    if (!n.isRead) {
+      await api.put(`/notifications/${n._id}/read`).catch(() => {});
+      setItems((a) => a.map((x) => (x._id === n._id ? { ...x, isRead: true } : x)));
+      refresh();
+    }
+    if (n.event?._id) {
+      close();
+      nav(`/event/${n.event._id}`);
+    }
   };
+  const anyUnread = items?.some((n) => !n.isRead);
   return (
-    <div className="notification-panel">
-      <div className="row-between">
+    <div className="notification-panel popover" role="dialog" aria-label="Notifications">
+      <div className="panel-head">
         <b>Notifications</b>
-        <button
-          className="text-btn"
-          onClick={async () => {
-            await api.put('/notifications/read-all');
-            setItems((a) => a.map((n) => ({ ...n, isRead: true })));
-            refresh();
-          }}
-        >
-          Mark all read
-        </button>
-        <button className="icon-btn" onClick={close}>
-          ×
+        {anyUnread && (
+          <button
+            className="text-btn"
+            onClick={async () => {
+              await api.put('/notifications/read-all');
+              setItems((a) => a.map((n) => ({ ...n, isRead: true })));
+              refresh();
+            }}
+          >
+            Mark all read
+          </button>
+        )}
+        <button className="icon-btn" aria-label="Close notifications" onClick={close}>
+          <X size={16} />
         </button>
       </div>
-      {items.length ? (
+      {!items ? (
+        <div className="loading" style={{ minHeight: 120, margin: 12 }} />
+      ) : items.length ? (
         items.map((n) => (
-          <button className={`notice ${n.isRead ? '' : 'unread'}`} key={n._id} onClick={() => read(n._id)}>
+          <button className={`notice ${n.isRead ? '' : 'unread'}`} key={n._id} onClick={() => open(n)}>
             <b>{n.title}</b>
             <span>{n.message}</span>
             <small>{datetime(n.createdAt)}</small>
           </button>
         ))
       ) : (
-        <div className="empty">You're all caught up.</div>
+        <p className="muted small" style={{ padding: '28px 16px', textAlign: 'center' }}>
+          You're all caught up.
+        </p>
       )}
     </div>
   );
 }
+
 export function RoutesView() {
   const { user } = useAuth();
   if (user.role === 'student') return <StudentRoutes />;

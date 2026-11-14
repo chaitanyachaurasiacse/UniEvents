@@ -114,27 +114,42 @@ export function EventTable({ items, manage = false }) {
         {items.map((e) => (
           <tr key={e._id}>
             <td>
-              <Link to={`/event/${e._id}`}>
-                <b>{e.title}</b>
-              </Link>
-              <small className="block muted">{e.category?.name}</small>
+              <div className="ev-cell">
+                <span className="thumb" style={bgStyle(coverFor(e))} />
+                <div>
+                  <Link to={`/event/${e._id}`}>
+                    <b>{e.title}</b>
+                  </Link>
+                  <small className="block muted">{e.category?.name}</small>
+                </div>
+              </div>
             </td>
-            <td>{date(e.startAt)}</td>
+            <td className="nowrap">{date(e.startAt)}</td>
             <td>
-              {e.registeredCount}/{e.capacity}
+              <div className="fill-cell">
+                <div className={`capacity ${seats(e).state === 'hot' ? 'hot' : ''}`}>
+                  <i style={{ width: `${seats(e).pct}%` }} />
+                </div>
+                <span>
+                  {e.registeredCount}/{e.capacity}
+                </span>
+              </div>
             </td>
             <td>
               <Status value={e.status} />
             </td>
             {manage && (
               <td>
-                <Link className="text-btn" to={`/manage/${e._id}`}>
-                  Manage
-                </Link>{' '}
-                ·{' '}
-                <Link className="text-btn" to={`/edit/${e._id}`}>
-                  Edit
-                </Link>
+                <div className="row-actions">
+                  <Link className="btn secondary small" to={`/manage/${e._id}`}>
+                    Manage
+                  </Link>
+                  {['Draft', 'Changes Requested', 'Rejected', 'Approved', 'Pending'].includes(e.status) && (
+                    <Link className="btn secondary small" to={`/edit/${e._id}`}>
+                      Edit
+                    </Link>
+                  )}
+                </div>
               </td>
             )}
           </tr>
