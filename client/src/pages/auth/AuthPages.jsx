@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { api } from "../../api";
 import { useAuth } from "../../lib/auth";
 import { PW_RULE } from "../../lib/format";
+import { store } from "../../lib/native";
 import { Discover } from "../student/Discover";
 
 export function AuthFrame({ children }) {
@@ -56,8 +57,8 @@ export function Register() {
     setBusy(true);
     try {
       const x = await api.post('/auth/register', f);
-      sessionStorage.removeItem('unievents_role');
-      sessionStorage.setItem('unievents_token', x.token);
+      store.removeItem('unievents_role');
+      store.setItem('unievents_token', x.token);
       setUser(x.user);
       nav('/');
     } catch (err) {

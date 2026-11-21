@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CalendarDays, Users, CheckCircle2 } from "lucide-react";
 import { api } from "../../api";
 import { date } from "../../lib/format";
+import { saveFile } from "../../lib/native";
 import { PageTitle, Stat, Status, useParamsSafe, Empty, AskModal } from "../../components/ui";
 
 export function ManageEvent() {
@@ -61,13 +62,7 @@ export function ManageEvent() {
         r.status,
       ]),
     ];
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(
-      new Blob([rows.map((x) => x.map(q).join(',')).join('\n')], { type: 'text/csv' }),
-    );
-    a.download = 'participants.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    saveFile('participants.csv', rows.map((x) => x.map(q).join(',')).join('\n')).catch((e) => setError(e.message));
   };
   if (!event) return <div className="loading">{error || 'Loading…'}</div>;
   return (

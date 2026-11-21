@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CalendarDays, Users, CheckCircle2, ChartNoAxesCombined, FileText } from "lucide-react";
 import { api } from "../api";
 import { date } from "../lib/format";
+import { saveFile } from "../lib/native";
 import { PageTitle, Stat, Status, Empty } from "../components/ui";
 
 export function Reports() {
@@ -19,12 +20,8 @@ export function Reports() {
   }, [type, range.from, range.to]);
   const exportCsv = async () => {
     try {
-      const blob = await api.get(`/reports/${type}/export`, { params, responseType: 'blob' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([blob], { type: 'text/csv' }));
-      a.download = 'unievents-report.csv';
-      a.click();
-      URL.revokeObjectURL(a.href);
+      const csv = await api.get(`/reports/${type}/export`, { params, responseType: 'text' });
+      await saveFile('unievents-report.csv', csv);
     } catch (e) {
       setError(e.message);
     }

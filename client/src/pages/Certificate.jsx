@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { Printer, ShieldCheck } from "lucide-react";
 import { api } from "../api";
+import { isApp, openInBrowser, publicUrl } from "../lib/native";
 
 // Public page: anyone with the link can view and check a certificate. It prints cleanly to PDF.
 export function Certificate() {
@@ -13,7 +14,8 @@ export function Certificate() {
     api.get(`/certificates/${code}`).then((x) => setC(x.certificate)).catch((e) => setError(e.message));
   }, [code]);
   const long = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  const url = typeof window !== 'undefined' ? window.location.href : '';
+  // Always the public website address, so the QR code also works when opened inside the app.
+  const url = `${publicUrl}/certificate/${code}`;
 
   return (
     <div className="cert-page">
@@ -22,7 +24,7 @@ export function Certificate() {
           <span className="brand-mark" /> UniEvents
         </Link>
         {c && (
-          <button className="btn primary" onClick={() => window.print()}>
+          <button className="btn primary" onClick={() => (isApp ? openInBrowser(url) : window.print())}>
             <Printer size={16} /> Print or save as PDF
           </button>
         )}

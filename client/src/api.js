@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { store } from './lib/native';
 export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api' });
 api.interceptors.request.use((c) => {
-  const t = sessionStorage.getItem('unievents_token');
+  const t = store.getItem('unievents_token');
   if (t) c.headers.Authorization = `Bearer ${t}`;
-  const r = sessionStorage.getItem('unievents_role');
+  const r = store.getItem('unievents_role');
   if (r) c.headers['X-Active-Role'] = r;
   return c;
 });
@@ -18,10 +19,10 @@ api.interceptors.response.use(
     if (
       e.response?.status === 401 &&
       err?.code === 'SESSION_EXPIRED' &&
-      sessionStorage.getItem('unievents_token')
+      store.getItem('unievents_token')
     ) {
-      sessionStorage.removeItem('unievents_token');
-      sessionStorage.removeItem('unievents_role');
+      store.removeItem('unievents_token');
+      store.removeItem('unievents_role');
       window.location.href = '/signin';
     }
     return Promise.reject(new Error(msg));

@@ -18,7 +18,9 @@ app.use(helmet());
 const allowed = (process.env.CLIENT_URL || 'http://localhost:5173')
   .split(',')
   .map((s) => s.trim().replace(/\/$/, ''))
-  .filter(Boolean);
+  .filter(Boolean)
+  // The Android app (Capacitor) loads its pages from this origin inside the phone.
+  .concat('https://localhost');
 const originOk = (o) =>
   !o ||
   allowed.some(
